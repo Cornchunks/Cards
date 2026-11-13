@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hide and Seek Card Tester</title>
+<style>
+  :root{--bg:#f3efe6;--ink:#1d2b2a;--muted:#666;--card:#fffdf7;--cardink:#1d2b2a;--edge:#1d2b2a;--slot:#1d2b2a22;--go:#c2410c;--back:#12403c;
+    box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14201f;--ink:#eee9dd;--muted:#a9b3b1;--card:#26332f;--cardink:#f1ecdf;--edge:#8fa39e;--slot:#ffffff22;--go:#f97316;--back:#0d2e2b}}
+  :root[data-theme="dark"]{--bg:#14201f;--ink:#eee9dd;--muted:#a9b3b1;--card:#26332f;--cardink:#f1ecdf;--edge:#8fa39e;--slot:#ffffff22;--go:#f97316;--back:#0d2e2b}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif;padding:10px;max-width:1250px;margin-inline:auto;-webkit-tap-highlight-color:transparent}
+  button{font:inherit;color:inherit;touch-action:manipulation}
+  header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+  h1{font-size:17px;margin:0}
+  h2{font-size:12px;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  h2 small{text-transform:none;letter-spacing:0;font-size:12px}
+  .btn{min-height:38px;padding:0 12px;border:1px solid var(--edge);border-radius:10px;background:transparent;cursor:pointer}
+  .btn.go{background:var(--go);border-color:var(--go);color:#fff}
+  #deck{width:100%;min-height:58px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;border:2px solid var(--edge);border-radius:12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;
+    background:repeating-linear-gradient(45deg,var(--back),var(--back) 8px,#1b5a54 8px,#1b5a54 16px)}
+  #deck:disabled{opacity:.45;cursor:not-allowed}
+  #deck span{font-size:13px;font-weight:400;background:#0008;padding:3px 9px;border-radius:8px}
+  .grid{display:grid;gap:8px}
+  #temp{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px}
+  #hand{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .slot{border:2px dashed var(--slot);border-radius:10px;min-height:110px}
+  #hand .slot{aspect-ratio:5/7;min-height:0}
+  .card{box-sizing:border-box;width:100%;border-radius:10px;padding:8px;display:flex;flex-direction:column;text-align:center;background:var(--card);color:var(--cardink);border:2px solid var(--edge);cursor:pointer}
+  .card h3{font-size:14px;font-weight:700;margin:0 0 5px;line-height:1.15}
+  .card .fx{flex:1;display:flex;font-size:10.5px;line-height:1.3;min-height:0}
+  .card .fx span{margin:auto 0;width:100%}
+  .card .cost{font-size:10px;line-height:1.25;border-top:1px solid var(--edge);padding-top:5px;margin-top:5px}
+  #temp .card{min-height:210px}
+  /* compact tiles in hand on phones: tap one to read it in full and discard */
+  #hand .card{aspect-ratio:5/7;overflow:hidden;padding:6px}
+  #hand .card h3{font-size:11.5px;margin-bottom:3px}
+  #hand .card .fx{font-size:9px;overflow:hidden}
+  #hand .card .fx span,#hand .card .cost{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+  #hand .card .fx span{-webkit-line-clamp:6}
+  #hand .card .cost{font-size:8.5px;-webkit-line-clamp:2;padding-top:3px;margin-top:3px}
+  @media (hover:hover){.card:hover{transform:translateY(-2px)}}
+  @media (min-width:720px){
+    body{padding:14px}
+    #temp{grid-template-columns:repeat(4,minmax(0,1fr))}
+    #hand{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .slot,#hand .slot{min-height:300px;aspect-ratio:auto}
+    #temp .card,#hand .card{min-height:300px;aspect-ratio:auto;overflow:visible;padding:10px}
+    .card h3,#hand .card h3{font-size:18px;margin-bottom:6px}
+    .card .fx,#hand .card .fx{font-size:11.5px;overflow:auto}
+    #hand .card .fx span,#hand .card .cost{display:block}
+    .card .cost,#hand .card .cost{font-size:11px;padding-top:6px;margin-top:6px}
+  }
+  #modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:10;padding:16px;box-sizing:border-box;overflow:auto}
+  #modal.open{display:flex}
+  #box{display:flex;flex-direction:column;align-items:center;gap:12px;color:#fff;margin:auto}
+  #box>b{font-size:20px}
+  #box .acts{display:flex;gap:10px;width:min(340px,90vw)}
+  #box .acts .btn{flex:1;min-height:48px;color:#fff;border-color:#fff;font-size:16px}
+  #box .acts .btn.go{border-color:var(--go)}
+  .card.big{width:min(340px,90vw);min-height:380px;aspect-ratio:auto;overflow:visible;padding:14px;cursor:default;outline:4px solid var(--go);outline-offset:3px}
+  .card.big h3{font-size:22px;margin-bottom:10px}
+  .card.big .fx{font-size:15px;overflow:visible}
+  .card.big .fx span{display:block}
+  .card.big .cost{display:block;font-size:14px;padding-top:8px;margin-top:10px}
+  #msg{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;max-width:90vw;z-index:20;display:none;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Card tester</h1>
+  <button class="btn" id="newgame">New game</button>
+</header>
+
+<button id="deck"><span id="dl">Draw a card</span><span id="dn"></span></button>
+
+<h2>Temporary zone <small id="tinfo"></small></h2>
+<div class="grid" id="temp"></div>
+
+<h2>Hand <small id="hinfo"></small><small>· tap a card to view or discard it</small></h2>
+<div class="grid" id="hand"></div>
+
+<div id="msg" role="status"></div>
+
+<div id="modal"><div id="box">
+  <b>Discard this card?</b>
+  <div id="mcard"></div>
+  <div class="acts"><button class="btn" id="cancel">Cancel</button><button class="btn go" id="discard">Discard</button></div>
+</div></div>
+
+<script type="text/plain" id="csv">Card,Category,Copies,Text (Effect),Text 2 (Casting Cost)
+3 Minute Time Bonus,Time Bonus,8,"If this card is in your hand at the end of the game, add 3 minutes to your total time.",
+5 Minute Time Bonus,Time Bonus,5,"If this card is in your hand at the end of the game, add 5 minutes to your total time.",
+10 Minute Time Bonus,Time Bonus,2,"If this card is in your hand at the end of the game, add 10 minutes to your total time.",
+Discard 1 Draw 2,Filter,3,Draw 2 cards.,Discard 1 card.
+Discard 2 Draw 3,Filter,3,Draw 3 cards.,Discard 2 cards.
+Veto,Wild,4,"In response to the seekers asking a question, play this card. The seeker's question is not answered, and you gain no rewards. The question still counts as ""asked"" and any penalties to the seekers for re-asking will be applied.",
+Duplicate,Wild,1,This card becomes a copy of a card in your hand.,
+Move,Wild,1,DIscard your hand and the send the seekers the location of your hiding station. You have 10 minutes to move to a different station. During this time the seekers may not move or ask questions.,The endgame must have not begun yet.
+Curse of the Zoologist,Curse,1,"Take a photo of a wild fish, bird, mammal, reptile, amphibian or bug. The seeker(s) must take a picture of a wild animal in the same category before asking another question.","Send a picture of an animal, where it takes up less than 50% of the image."
+Curse of the Bridge Troll,Curse,1,The seekers must ask their next question from under a bridge.,Seekers Must be at least 2 km from you.
+Curse of Abnormality,Curse,1,"The seekers must go to a Normal and find 3 of the following items before asking another question: Licorice Candy, Deodorant, Socks, Pens, Faxe Kondi Booster, Shoes.",The hider must be at a metro stop.
+Curse of the Flødebolle,Curse,1,"The seekers must find and buy a flødebolle before asking another question. The seeker must deliver the flødebolle to the hider without cracking the shell, or the hider gets a 20 minute time bonus.",Discard 2 cards.
+Curse of the Brain Drain,Curse,1,Choose 2 questions in different categories. The seekers cannot ask those questions for the rest of the run.,Discard your hand.
+Curse of the Called Shot,Curse,1,"Secretly pick a question. If the seekers ask that question, automatically veto it AND get the reward.",
+Curse of the Right Turn,Curse,1,"For the next 15 minutes the seekers can only turn right at any street intersection. If at any point they find themselves in dead end where they cannot continue forward or turn right, they must do a full 180. A right turn is defined as a road at any angle that veers to the right of the seekers.",Discard a card.
+Curse of the Foreign Cuisine,Curse,1,Find a restaurant within your zone that explicitly serves food from a specific foreign country. The seekers must visit a restaurant serving food from a country that is equal or great distance away before asking another question.,The hider must be at the restaurant.
+Curse of the Bike Enthusiast,Curse,1,"Find 3 of the following types of bikes, and send pictures of them to the hiders. Blue wheel, plastic bag seat cover, 2 baskets, no gears, missing handlebar covers, lights left on.","The hider must send a picture of one of these types of bikes, where it takes up less than 50% of the image."
+Curse of the Technology Cleanse,Curse,1,"For the next 20 minutes, the seekers are not allowed to use their phone. Seekers can still ask questions, pay for public transit, or complete curses that require their phone.",Discard a card
+Curse of the Legos,Curse,1,Take a picture of a lego set with the number of pieces visible. The seekers must find a lego set of equal or more pieces before asking another question.,"Send a picture of the lego set, without moving it, and where it takes up less than 50% of the image."
+Curse of the Refined Baker,Curse,1,"Before asking another question, the seekers must go to a bakery (ones inside grocery stores are OK). One seeker must close their eyes while the other buys a pastry and gives a bite to the blind seeker. The blind seeker must then go into the store, and correctly identify the pastry. If failed, switch roles and repeat until completed.",Discard a card
+Curse of the Summer Vacation,Curse,1,"Before asking another question, the seekers must take a beer to a park, and enjoy it. A park is any green space on google maps.",Discard a card</script>
+<script>
+const MAX_HAND = 6, MAX_TEMP = 4;
+const $ = id => document.getElementById(id);
+
+function parseCSV(t){
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const rows = parseCSV($('csv').textContent.trim() + '\n'), head = rows.shift();
+const col = n => head.findIndex(h => h.trim() === n);
+const iN = col('Card'), iC = col('Copies'), iE = col('Text (Effect)'), iK = col('Text 2 (Casting Cost)');
+const CARDS = rows.filter(r => r[iN] && r[iN].trim()).map(r => ({name: r[iN].trim(), copies: parseInt(r[iC], 10) || 1, effect: (r[iE] || '').trim(), cost: (r[iK] || '').trim()}));
+
+let deck, temp, hand, discarding = -1, mt = 0;
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
+function newGame(){
+  deck = []; temp = []; hand = []; discarding = -1;
+  for (const c of CARDS) for (let n = 0; n < c.copies; n++) deck.push(c);
+  shuffle(deck); msg(''); render(); save();
+}
+
+// Autosave: the whole game (deck order, temporary zone, hand) is stored in this browser
+// every time a card enters or leaves the hand, and when a new game starts.
+const KEY = 'hs-card-tester-v1';
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify({deck: deck.map(c => CARDS.indexOf(c)), temp: temp.map(c => CARDS.indexOf(c)), hand: hand.map(c => CARDS.indexOf(c))})); } catch(e){}
+}
+// Returns false (and a new game is started) if nothing is saved or the saved game no longer matches the card list.
+function restore(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (!s || !Array.isArray(s.deck) || !Array.isArray(s.temp) || !Array.isArray(s.hand)) return false;
+    if (s.hand.length > MAX_HAND || s.temp.length > MAX_TEMP) return false;
+    const have = CARDS.map(() => 0);
+    for (const i of [...s.deck, ...s.temp, ...s.hand]) { if (!Number.isInteger(i) || i < 0 || i >= CARDS.length) return false; have[i]++; }
+    if (have.some((n, i) => n !== CARDS[i].copies)) return false;
+    deck = s.deck.map(i => CARDS[i]); temp = s.temp.map(i => CARDS[i]); hand = s.hand.map(i => CARDS[i]); discarding = -1;
+    msg(''); render(); return true;
+  } catch(e){ return false; }
+}
+function msg(t){
+  const m = $('msg'); clearTimeout(mt);
+  m.textContent = t; m.style.display = t ? 'block' : 'none';
+  if (t) mt = setTimeout(() => { m.style.display = 'none'; }, 3500);
+}
+
+function cardEl(c, extra){
+  const d = document.createElement('button'); d.className = 'card' + (extra ? ' ' + extra : '');
+  const h = document.createElement('h3'); h.textContent = c.name;
+  const f = document.createElement('div'); f.className = 'fx'; const s = document.createElement('span'); s.textContent = c.effect; f.appendChild(s);
+  d.append(h, f);
+  if (c.cost) { const k = document.createElement('div'); k.className = 'cost'; k.textContent = 'Casting Cost: ' + c.cost; d.appendChild(k); }
+  return d;
+}
+function slot(){ const s = document.createElement('div'); s.className = 'slot'; return s; }
+
+function render(){
+  $('dn').textContent = deck.length + ' in deck';
+  $('dl').textContent = temp.length >= MAX_TEMP ? 'Temporary zone full' : 'Draw a card';
+  $('deck').disabled = deck.length === 0 || temp.length >= MAX_TEMP;
+  $('tinfo').textContent = `${temp.length}/${MAX_TEMP} drawn · tap one to keep it`;
+  $('hinfo').textContent = `${hand.length}/${MAX_HAND}`;
+  const t = $('temp'); t.innerHTML = '';
+  temp.forEach((c, i) => { const e = cardEl(c); e.onclick = () => pick(i); t.appendChild(e); });
+  for (let i = temp.length; i < MAX_TEMP; i++) t.appendChild(slot());
+  const h = $('hand'); h.innerHTML = '';
+  hand.forEach((c, i) => { const e = cardEl(c); e.onclick = () => { discarding = i; $('mcard').replaceChildren(cardEl(c, 'big')); $('modal').classList.add('open'); }; h.appendChild(e); });
+  for (let i = hand.length; i < MAX_HAND; i++) h.appendChild(slot());
+}
+
+$('deck').onclick = () => {
+  if (temp.length >= MAX_TEMP || !deck.length) return;
+  temp.push(deck.pop()); msg(''); render();
+};
+function pick(i){
+  if (hand.length >= MAX_HAND) { msg('Your hand is full (6/6). Discard a card from your hand first.'); return; }
+  hand.push(temp[i]);
+  deck.push(...temp.filter((_, j) => j !== i)); temp = [];
+  shuffle(deck); msg(''); render(); save();
+}
+function closeModal(){ discarding = -1; $('modal').classList.remove('open'); }
+$('cancel').onclick = closeModal;
+$('discard').onclick = () => {
+  if (discarding < 0) return;
+  deck.push(hand.splice(discarding, 1)[0]);
+  shuffle(deck); closeModal(); msg(''); render(); save();
+};
+$('newgame').onclick = () => { if (confirm('Start over with a fresh shuffled deck?')) newGame(); };
+if (!restore()) newGame();
+</script>
+</body>
+</html>
